@@ -6,6 +6,10 @@ public class NavX {
 	
 	public AHRS ahrs;
 
+	public double calibrate() {
+		return ahrs.calibrate(); // calibrate gyro
+	}
+	
 	public double getNormalizedAngle() {
 		return ((ahrs.getAngle() % 360) + 360) % 360;
 	}

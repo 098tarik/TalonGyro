@@ -13,38 +13,36 @@ public class TankGyro {
 	private TalonSRX left1;
 	private NavX TalonGyro;
 	private TalonSRX right2;
-	
-	private Joystick turn;
-	
+		
 	private double percentRotation;
-	private double percentDrive;
 	private double gyroAngle;
 	private double targetAngle;
+	private double angle;
 
-	private states state = states.readGyro; 
+	private states state = states.readGyro;
 	
 	private enum states {readGyro,  resetGyro, rotateToGyro}
 	
+    // PID constants from mecanumcode
+	// PID constants
+	private double kP = 0.0; // Proportional constant
+	private double kI = 0.0; // Integral constant
+	private double kD = 0.0; // Derivative constant
+	private double kF = 0.0; // Feed Forward constant
 	
-	    //PID constants from mecanumDriveCode
-	    // PID constants
-		private double kP = 0.0; // Proportional constant
-		private double kI = 0.0; // Integral constant
-		private double kD = 0.0; // Derivative constant
-		private double kF = 0.0; // Feed Forward constant
-		
-		// PID variables
-		private double prevError = 0.0; // The error from the previous loop
-		private double integral = 0.0; // Error integrated over time
-		
-		private long prevTime;
-		
-		private double setpoint; // The target orientation for the robot
-		
-		private double tolerance = 1;
-		
-		private double maxOutput = 1.0;
-		private double minOutput = -1.0;
+	// PID variables
+	private double prevError = 0.0; // The error from the previous loop
+	private double integral = 0.0; // Error integrated over time
+	
+	private long prevTime;
+	
+	private double setpoint; // The target orientation for the robot
+	
+	private double tolerance = 1;
+	
+	private double maxOutput = 1.0;
+	private double minOutput = -1.0;
+	
 	
 	public TankGyro(NavX TalonGyro, TalonSRX left1, TalonSRX left2, TalonSRX right1, TalonSRX right2) {
 		this.TalonGyro = TalonGyro;
@@ -64,12 +62,17 @@ public class TankGyro {
 	// Change Gyro State (Read Gyro, Reset Gyro, Turn to Gyro Angle)
 	public void gyroState() {
 		
-		TalonGyro.getRawAngle();
+		if(IO.rotateButton.equals(true)) {
+			turnToAngle(90);
+			state = states.rotateToGyro;
+		} else {
+			state = states.readGyro;
+		}
+
 		switch(state) {
 		
 		case readGyro:
 			TalonGyro.getNormalizedAngle();
-			
 			break;
 			
 		case resetGyro:
@@ -80,29 +83,33 @@ public class TankGyro {
 		case rotateToGyro:
 		   TalonGyro.getNormalizedAngle();
 		   
-		   // Error of gyro angle to target angle
+		    // Error of gyro angle to target angle
 		   double error = targetAngle - gyroAngle;
+		   // angle correction for shortest path from Mecanum
+		   if (Math.abs(error) > 180) { // if going around the other way is closer
+				if (error > 0) { // if positive
+					error = error - 360;
+				} else { // if negative
+				    error =  error + 360;
+				}
+			}
 		   
 		   // percent rotation to pass through percent output
 		   // as error approaches zero, percent output approaches zero (i.e target reached)
-		   percentRotation = error/targetAngle;
+		      percentRotation = error/targetAngle;
 		   
 		      left1.set(ControlMode.PercentOutput, percentRotation);
 		      right1.set(ControlMode.PercentOutput, percentRotation);
-		      
+		    
+		      state = states.resetGyro;
 			break;
 		}
 	
 		
 	}
-	
-	public double getNormalizedAngle() {
-		return gyroAngle;
-		}
-	
-	public void turnToAngle(double angle ) {
-		this.gyroAngle = angle;
 		
+	public void turnToAngle(double angle) {
+		this.angle = targetAngle;
 	}
 
 }

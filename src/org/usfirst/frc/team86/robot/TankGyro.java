@@ -43,6 +43,16 @@ public class TankGyro {
 	private double maxOutput = 1.0;
 	private double minOutput = -1.0;
 	
+	public void init(double setpoint, double p, double i, double d, double f) {
+		this.setpoint = setpoint;
+		this.kP = p;
+		this.kI = i;
+		this.kD = d;
+		this.kF = f;
+		this.prevError = 0.0;
+		this.integral = 0.0;
+	}
+	
 	
 	public TankGyro(NavX TalonGyro, TalonSRX left1, TalonSRX left2, TalonSRX right1, TalonSRX right2) {
 		this.TalonGyro = TalonGyro;
@@ -77,14 +87,18 @@ public class TankGyro {
 			
 		case resetGyro:
 			TalonGyro.reset();
+			targetAngle = 0;
 			state = states.readGyro;
 			break;
 			
 		case rotateToGyro:
 		   TalonGyro.getNormalizedAngle();
 		   
+		   kP = 1/360;
 		    // Error of gyro angle to target angle
-		   double error = targetAngle - gyroAngle;
+		   double preverror = targetAngle - gyroAngle;
+		   double error = preverror*kP;
+		   
 		   // angle correction for shortest path from Mecanum
 		   if (Math.abs(error) > 180) { // if going around the other way is closer
 				if (error > 0) { // if positive
@@ -92,6 +106,41 @@ public class TankGyro {
 				} else { // if negative
 				    error =  error + 360;
 				}
+				
+				//PID from mecanum //TODO look at this at home and finish + test Monday Night
+				double maxI = 0.4;
+				if (kI != 0) {
+		            double potentialIGain = (integral + error) * kI;
+		            if (potentialIGain < maxI) {
+		              if (potentialIGain > -maxI) {
+		                integral += error;
+		              } else {
+		                integral = -maxI; // -1 / kI
+		              }
+		            } else {
+		              integral = maxI; // 1 / kI
+		            }
+		        } else {
+		        	integral = 0;
+		        }
+				
+				if (Math.abs(error) < 3.0) {
+					error = 0;
+				}
+				
+		    double result = (kP * error) + (kI * integral) + (kD * (error - prevError));
+		        if (result > 0) {
+		        	result += kF;
+		        } else {
+		        	result -= kF;
+		        }
+		       	prevError = error;
+		       	
+		        if (result > 1) {
+		          result = 1;
+		        } else if (result < -1) {
+		          result = -1;
+		        }
 			}
 		   
 		   // percent rotation to pass through percent output

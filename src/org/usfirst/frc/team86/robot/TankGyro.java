@@ -86,8 +86,7 @@ public class TankGyro {
 			
 		case resetGyro:
 			TalonGyro.reset();
-			targetAngle = 0;
-			state = states.readGyro;
+			state = states.rotateToGyro;
 			break;
 			
 		case rotateToGyro:		   

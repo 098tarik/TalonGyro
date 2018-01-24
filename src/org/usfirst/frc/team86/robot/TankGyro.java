@@ -17,8 +17,8 @@ public class TankGyro {
 	private double percentRotation;
 	private double gyroAngle;
 	private double targetAngle;
-	private double angle;
 
+	private double result;
 	private states state = states.readGyro;
 	
 	private enum states {readGyro,  resetGyro, rotateToGyro}
@@ -71,13 +71,12 @@ public class TankGyro {
 
 	// Change Gyro State (Read Gyro, Reset Gyro, Turn to Gyro Angle)
 	public void gyroState() {
+		gyroAngle = TalonGyro.getNormalizedAngle();
+		state = states.rotateToGyro;
 		
-		if(IO.rotateButton.equals(true)) {
-			turnToAngle(90);
-			state = states.rotateToGyro;
-		} else {
-			state = states.readGyro;
-		}
+		if(IO.resetButton.equals(true)) {
+			state = state.resetGyro;
+			}
 
 		switch(state) {
 		
@@ -91,43 +90,19 @@ public class TankGyro {
 			state = states.readGyro;
 			break;
 			
-		case rotateToGyro:
-		   TalonGyro.getNormalizedAngle();
-		   
-		   kP = 1/360;
-		    // Error of gyro angle to target angle
-		   double preverror = targetAngle - gyroAngle;
-		   double error = preverror*kP;
-		   
-		   // angle correction for shortest path from Mecanum
-		   if (Math.abs(error) > 180) { // if going around the other way is closer
-				if (error > 0) { // if positive
+		case rotateToGyro:		   
+		   // Error of gyro angle to target angle
+		   double error = targetAngle - gyroAngle;
+		  
+		   // angle correction for shortest 
+		   if (Math.abs(error) > 180) { 
+				if (error > 0) { 
 					error = error - 360;
-				} else { // if negative
+				} else { 
 				    error =  error + 360;
 				}
 				
-				//PID from mecanum //TODO look at this at home and finish + test Monday Night
-				double maxI = 0.4;
-				if (kI != 0) {
-		            double potentialIGain = (integral + error) * kI;
-		            if (potentialIGain < maxI) {
-		              if (potentialIGain > -maxI) {
-		                integral += error;
-		              } else {
-		                integral = -maxI; // -1 / kI
-		              }
-		            } else {
-		              integral = maxI; // 1 / kI
-		            }
-		        } else {
-		        	integral = 0;
-		        }
-				
-				if (Math.abs(error) < 3.0) {
-					error = 0;
-				}
-				
+				//PID from mecanum 
 		    double result = (kP * error) + (kI * integral) + (kD * (error - prevError));
 		        if (result > 0) {
 		        	result += kF;
@@ -144,21 +119,15 @@ public class TankGyro {
 			}
 		   
 		   // percent rotation to pass through percent output
-		   // as error approaches zero, percent output approaches zero (i.e target reached)
-		      percentRotation = error/targetAngle;
+		      percentRotation = result;
 		   
 		      left1.set(ControlMode.PercentOutput, percentRotation);
-		      right1.set(ControlMode.PercentOutput, percentRotation);
+		      right1.set(ControlMode.PercentOutput, -percentRotation);
 		    
-		      state = states.resetGyro;
-			break;
+		      break;
 		}
-	
-		
 	}
-		
-	public void turnToAngle(double angle) {
-		this.angle = targetAngle;
+	public void turnToAngle(double targetAngle) {
+		this.targetAngle = targetAngle;
 	}
-
 }

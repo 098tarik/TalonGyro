@@ -1,86 +1,102 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
-
 package org.usfirst.frc.team86.robot;
 
-import edu.wpi.first.wpilibj.IterativeRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import org.usfirst.frc.team86.robot.TalonDrive.Gear;
+
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.PowerDistributionPanel;
+import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-/**
- * The VM is configured to automatically run this class, and to call the
- * functions corresponding to each mode, as described in the IterativeRobot
- * documentation. If you change the name of this class or the package after
- * creating this project, you must also update the build.properties file in the
- * project.
- */
-public class Robot extends IterativeRobot {
-	private static final String kDefaultAuto = "Default";
-	private static final String kCustomAuto = "My Auto";
-	private String m_autoSelected;
-	private SendableChooser<String> m_chooser = new SendableChooser<>();
+public class Robot extends TimedRobot {
 
-	/**
-	 * This function is run when the robot is first started up and should be
-	 * used for any initialization code.
-	 */
-	@Override
-	public void robotInit() {
-		m_chooser.addDefault("Default Auto", kDefaultAuto);
-		m_chooser.addObject("My Auto", kCustomAuto);
-		SmartDashboard.putData("Auto choices", m_chooser);
-	}
+    private TalonSRX left1;
+    private TalonSRX left2;
+    private TalonSRX right1;
+    private TalonSRX right2;
+    
+    private TalonDrive driveTrain;
+    private TankGyro gyro;
+    private NavX talonGyro;
+    
+    
+    private Joystick left;
+    private Joystick right;
+    
+    private PowerDistributionPanel pdp = new PowerDistributionPanel(0);
 
-	/**
-	 * This autonomous (along with the chooser code above) shows how to select
-	 * between different autonomous modes using the dashboard. The sendable
-	 * chooser code works with the Java SmartDashboard. If you prefer the
-	 * LabVIEW Dashboard, remove all of the chooser code and uncomment the
-	 * getString line to get the auto name from the text box below the Gyro
-	 *
-	 * <p>You can add additional auto modes by adding additional comparisons to
-	 * the switch structure below with additional strings. If using the
-	 * SendableChooser make sure to add them to the chooser code above as well.
-	 */
-	@Override
+    @Override
+    public void robotInit() {
+    	
+    	// both left motors are inverted (left1 and left2)
+    	// none of the sensors are inverted (setSensorPhase)
+        left1 = new TalonSRX(57);
+        left1.setInverted(true);
+        left1.setSensorPhase(false);
+        left2 = new TalonSRX(59);
+        left2.setInverted(true);
+        left2.setSensorPhase(false);
+        right1 = new TalonSRX(58);
+        right1.setSensorPhase(false);
+        right2 = new TalonSRX(56);
+        right2.setSensorPhase(false);
+        
+        left1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 0);
+        left2.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 0);
+        right1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 0);  
+        right2.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 0);
+        
+        driveTrain = new TalonDrive(left1, left2, right1, right2);
+        driveTrain.setMaxMotorRPM(5100);
+        driveTrain.setWheelSize(6.0);
+        driveTrain.setLowRatio(8.45);
+        driveTrain.setHighRatio(8.45);
+        driveTrain.setGear(Gear.LOW);
+        driveTrain.setTicksPerRevolution(80);
+        
+        left = new Joystick(0);
+        right = new Joystick(1);
+    }
+
+    @Override
+    public void teleopPeriodic() {
+        driveTrain.drive(left.getY(), right.getY());
+        
+        SmartDashboard.putNumber("Left", left.getY() * driveTrain.getMaxFloorSpeed());
+        SmartDashboard.putNumber("Right", right.getY() * driveTrain.getMaxFloorSpeed());
+        
+        
+        SmartDashboard.putNumber("left1", pdp.getCurrent(1));
+        SmartDashboard.putNumber("left2", pdp.getCurrent(2));
+        SmartDashboard.putNumber("right1", pdp.getCurrent(12));
+        SmartDashboard.putNumber("right2", pdp.getCurrent(13));
+        
+        SmartDashboard.putNumber("left1 velocity", getFloorSpeed(left1.getSelectedSensorVelocity(0)));
+        SmartDashboard.putNumber("left2 velocity", getFloorSpeed(left2.getSelectedSensorVelocity(0)));
+        SmartDashboard.putNumber("right1 velocity", getFloorSpeed(right1.getSelectedSensorVelocity(0)));
+        SmartDashboard.putNumber("right2 velocity", getFloorSpeed(right2.getSelectedSensorVelocity(0)));
+    }
+    
+    @Override
 	public void autonomousInit() {
-		m_autoSelected = m_chooser.getSelected();
-		// autoSelected = SmartDashboard.getString("Auto Selector",
-		// defaultAuto);
-		System.out.println("Auto selected: " + m_autoSelected);
+    	gyro = new TankGyro(talonGyro,left1,left2,right1,right2);   
 	}
 
-	/**
-	 * This function is called periodically during autonomous.
-	 */
 	@Override
 	public void autonomousPeriodic() {
-		switch (m_autoSelected) {
-			case kCustomAuto:
-				// Put custom auto code here
-				break;
-			case kDefaultAuto:
-			default:
-				// Put default auto code here
-				break;
-		}
+    	gyro.turnToAngle(90.0);
+		gyro.gyroState();
+
 	}
 
-	/**
-	 * This function is called periodically during operator control.
-	 */
-	@Override
-	public void teleopPeriodic() {
-	}
-
-	/**
-	 * This function is called periodically during test mode.
-	 */
-	@Override
-	public void testPeriodic() {
-	}
+    
+    private double getFloorSpeed(double sensorRdg) {
+    	double motorRPM = sensorRdg / TalonDrive.SCALE_FACTOR / driveTrain.getTicksPerRevolution();
+    	double wheelRPM = motorRPM / driveTrain.getGear().getRatio();
+    	double wheelFtPerSec = wheelRPM * driveTrain.getWheelSize() / 60.0 / 12.0;
+    	return wheelFtPerSec;
+    }
+    
 }

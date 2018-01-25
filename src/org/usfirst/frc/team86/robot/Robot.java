@@ -81,13 +81,14 @@ public class Robot extends TimedRobot {
     
     @Override
 	public void autonomousInit() {
-    	gyro = new TankGyro(talonGyro,left1,left2,right1,right2);   
+    	gyro = new TankGyro(talonGyro,left1,left2,right1,right2); 
+    	gyro.turnToAngle(90.0);
+
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-    	gyro.turnToAngle(90.0);
-		gyro.gyroState();
+		gyro.updateGyro();
 
 	}
 

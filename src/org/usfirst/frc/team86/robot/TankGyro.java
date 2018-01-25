@@ -25,7 +25,7 @@ public class TankGyro {
 	
     // PID constants from mecanumcode
 	// PID constants
-	private double kP = 0.0; // Proportional constant
+	private double kP = 1/180; // Proportional constant
 	private double kI = 0.0; // Integral constant
 	private double kD = 0.0; // Derivative constant
 	private double kF = 0.0; // Feed Forward constant
@@ -70,7 +70,7 @@ public class TankGyro {
 	}
 
 	// Change Gyro State (Read Gyro, Reset Gyro, Turn to Gyro Angle)
-	public void gyroState() {
+	public void updateGyro() {
 		gyroAngle = TalonGyro.getNormalizedAngle();
 		state = states.rotateToGyro;
 		
@@ -91,8 +91,8 @@ public class TankGyro {
 			
 		case rotateToGyro:		   
 		   // Error of gyro angle to target angle
-		   double error = targetAngle - gyroAngle;
-		  
+		   double error = (targetAngle - gyroAngle)*(1/180);
+		
 		   // angle correction for shortest 
 		   if (Math.abs(error) > 180) { 
 				if (error > 0) { 

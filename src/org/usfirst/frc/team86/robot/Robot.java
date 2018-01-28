@@ -48,6 +48,9 @@ public class Robot extends TimedRobot {
         right1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 0);  
         right2.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 0);
         
+    	gyro = new TankGyro(talonGyro,left1,left2,right1,right2); 
+
+    	
         driveTrain = new TalonDrive(left1, left2, right1, right2);
         driveTrain.setMaxMotorRPM(5100);
         driveTrain.setWheelSize(6.0);
@@ -81,15 +84,14 @@ public class Robot extends TimedRobot {
     
     @Override
 	public void autonomousInit() {
-    	gyro = new TankGyro(talonGyro,left1,left2,right1,right2); 
     	gyro.turnToAngle(90.0);
-
+    	gyro = new TankGyro(talonGyro,left1,left2,right1,right2); 
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-		gyro.updateGyro();
-
+		gyro.updateGyro();  
+		SmartDashboard.putNumber("gyro angle", talonGyro.getNormalizedAngle());
 	}
 
     

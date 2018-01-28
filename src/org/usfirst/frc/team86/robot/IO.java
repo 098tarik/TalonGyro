@@ -5,7 +5,7 @@ import edu.wpi.first.wpilibj.buttons.Button;
 import edu.wpi.first.wpilibj.buttons.JoystickButton;
 
 public class IO {
-   public static Joystick coJoystick = new Joystick(2);
+   public static Joystick coJoystick = new Joystick(0);
 	
 
 	
